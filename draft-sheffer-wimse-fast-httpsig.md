@@ -19,18 +19,18 @@
 # Change the file extension to match the format (.xml for XML, etc...)
 #
 ###
-title: "TODO - Your title"
-abbrev: "TODO - Abbreviation"
+title: "Fast HTTP Message Signatures for WIMSE"
+abbrev: "WIMSE Fast HTTPSig"
 category: info
 
-docname: draft-todo-yourname-protocol-latest
+docname: draft-sheffer-wimse-fast-httpsig-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
 consensus: true
 v: 3
-area: AREA
-workgroup: WG Working Group
+area: "Security"
+workgroup: "Workload Identity in Multi System Environments"
 keyword:
  - next generation
  - unicorn
