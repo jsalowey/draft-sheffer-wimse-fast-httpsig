@@ -9,19 +9,19 @@ number:
 date:
 consensus: true
 v: 3
-area: "Security"
+area: "Applications and Real-Time"
 workgroup: "Workload Identity in Multi System Environments"
 keyword:
  - next generation
  - unicorn
  - AI-native
 venue:
-  group: WG
-  type: Working Group
-  mail: WG@example.com
-  arch: https://example.com/WG
-  github: USER/REPO
-  latest: https://example.com/LATEST
+  group: "Workload Identity in Multi System Environments"
+  type: "Working Group"
+  mail: "wimse@ietf.org"
+  arch: "https://mailarchive.ietf.org/arch/browse/wimse/"
+  github: "yaronf/draft-sheffer-wimse-fast-httpsig"
+  latest: "https://yaronf.github.io/draft-sheffer-wimse-fast-httpsig/draft-sheffer-wimse-fast-httpsig.html"
 
 author:
  -
