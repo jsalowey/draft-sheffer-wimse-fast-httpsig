@@ -339,23 +339,33 @@ Table of Contents
       request after key derivation (typically the first session
       request).
 
-   *  Once a ticket parameter has been established, senders MUST echo
-      that same value on later session messages, and MUST NOT change it
-      for the rest of the session.
+   *  Once wimse-ticket-server has been established, session requests
+      and responses MUST echo that same value and MUST NOT change it for
+      the rest of the session.
+
+   *  Once the client has sent wimse-ticket-client, later session
+      requests MUST echo that same value and MUST NOT change it for the
+      rest of the session.
+
+   *  A session response MUST echo wimse-ticket-client when the
+      corresponding request carried it, using that same value.
+      Concurrent requests may still be in flight without the ticket when
+      another request first establishes it; a response to a request that
+      omitted wimse-ticket-client MAY omit it.
 
    *  Senders MUST NOT include a ticket parameter that has not been
       established.
-
-   *  After the client has sent wimse-ticket-client, the server MUST
-      echo it on subsequent session responses.
 
    A peer that already has the keys from Section 5 (or from local
    session state) need not open a ticket; it only echoes parameters it
    must carry.
 
-   This document does not specify ticket format, encryption, or how each
-   deployment protects its ticket-opening keys.  Those keys are not
-   shared across the two deployments.
+   This document does not specify ticket format or how each deployment
+   manages ticket-opening keys.  Those keys are not shared across the
+   two deployments.  When a ticket carries session key material, the
+   issuer MUST protect that material with authenticated encryption, or
+   with equivalent confidentiality and integrity protection, under keys
+   known only to that deployment.
 
    A ticket implementation needs enough data for a replica of the
    issuing peer to obtain k_req and k_res and to enforce Section 7.  The
@@ -440,9 +450,11 @@ Table of Contents
    across replicas leave cross-replica replay possible.
 
    TLS-terminating intermediaries see wimse-session-id, ticket
-   parameters (when present), and MAC values in cleartext.  They cannot
-   alter covered components without failing verification.  They can
-   attempt capture-and-replay within expires.
+   parameters (when present), and MAC values in cleartext.  With the
+   ticket protection required in Section 8, they see ciphertext rather
+   than k_req and k_res.  They cannot alter covered components without
+   failing verification.  They can attempt capture-and-replay within
+   expires.
 
 11.  IANA Considerations
 

@@ -1517,22 +1517,32 @@ The client <span class="bcp14">MAY</span> include <code>wimse-ticket-client</cod
 (typically the first session request).<a href="#section-8-5.2.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-5.3">
-          <p id="section-8-5.3.1">Once a ticket parameter has been established, senders <span class="bcp14">MUST</span> echo that same value on
-later session messages, and <span class="bcp14">MUST NOT</span> change it for the rest of the session.<a href="#section-8-5.3.1" class="pilcrow">¶</a></p>
+          <p id="section-8-5.3.1">Once <code>wimse-ticket-server</code> has been established, session requests and responses <span class="bcp14">MUST</span>
+echo that same value and <span class="bcp14">MUST NOT</span> change it for the rest of the session.<a href="#section-8-5.3.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-5.4">
-          <p id="section-8-5.4.1">Senders <span class="bcp14">MUST NOT</span> include a ticket parameter that has not been established.<a href="#section-8-5.4.1" class="pilcrow">¶</a></p>
+          <p id="section-8-5.4.1">Once the client has sent <code>wimse-ticket-client</code>, later session requests <span class="bcp14">MUST</span> echo that
+same value and <span class="bcp14">MUST NOT</span> change it for the rest of the session.<a href="#section-8-5.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-5.5">
-          <p id="section-8-5.5.1">After the client has sent <code>wimse-ticket-client</code>, the server <span class="bcp14">MUST</span> echo it on subsequent
-session responses.<a href="#section-8-5.5.1" class="pilcrow">¶</a></p>
+          <p id="section-8-5.5.1">A session response <span class="bcp14">MUST</span> echo <code>wimse-ticket-client</code> when the corresponding request
+carried it, using that same value.
+Concurrent requests may still be in flight without the ticket when another request
+first establishes it; a response to a request that omitted <code>wimse-ticket-client</code> <span class="bcp14">MAY</span>
+omit it.<a href="#section-8-5.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-5.6">
+          <p id="section-8-5.6.1">Senders <span class="bcp14">MUST NOT</span> include a ticket parameter that has not been established.<a href="#section-8-5.6.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-8-6">A peer that already has the keys from <a href="#key-derivation" class="auto internal xref">Section 5</a> (or from local session state)
 need not open a ticket; it only echoes parameters it must carry.<a href="#section-8-6" class="pilcrow">¶</a></p>
-<p id="section-8-7">This document does not specify ticket format, encryption, or how each deployment
-protects its ticket-opening keys.
-Those keys are not shared across the two deployments.<a href="#section-8-7" class="pilcrow">¶</a></p>
+<p id="section-8-7">This document does not specify ticket format or how each deployment manages
+ticket-opening keys.
+Those keys are not shared across the two deployments.
+When a ticket carries session key material, the issuer <span class="bcp14">MUST</span> protect that material with
+authenticated encryption, or with equivalent confidentiality and integrity protection,
+under keys known only to that deployment.<a href="#section-8-7" class="pilcrow">¶</a></p>
 <p id="section-8-8">A ticket implementation needs enough data for a replica of the issuing peer to obtain
 <code>k_req</code> and <code>k_res</code> and to enforce <a href="#lifetime" class="auto internal xref">Section 7</a>.
 The following content is <span class="bcp14">RECOMMENDED</span> inside the protected ticket material:<a href="#section-8-8" class="pilcrow">¶</a></p>
@@ -1617,6 +1627,8 @@ Possession of <code>session_id</code> alone does not allow forging session MACs.
 leave cross-replica replay possible.<a href="#section-10-8" class="pilcrow">¶</a></p>
 <p id="section-10-9">TLS-terminating intermediaries see <code>wimse-session-id</code>, ticket parameters (when present),
 and MAC values in cleartext.
+With the ticket protection required in <a href="#ticket" class="auto internal xref">Section 8</a>, they see ciphertext rather than
+<code>k_req</code> and <code>k_res</code>.
 They cannot alter covered components without failing verification.
 They can attempt capture-and-replay within <code>expires</code>.<a href="#section-10-9" class="pilcrow">¶</a></p>
 </section>
