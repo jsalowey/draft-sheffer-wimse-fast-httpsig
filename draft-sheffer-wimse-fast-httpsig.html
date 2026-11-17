@@ -1205,7 +1205,10 @@ later requests and responses between the same workloads without the WIT.<a href=
                     <p id="section-toc.1-1.11.2.1.2.3.1"><a href="#section-11.1.3" class="auto internal xref">11.1.3</a>.  <a href="#name-wimse-session-id" class="internal xref"><code>wimse-session-id</code></a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1.2.4">
-                    <p id="section-toc.1-1.11.2.1.2.4.1"><a href="#section-11.1.4" class="auto internal xref">11.1.4</a>.  <a href="#name-wimse-ticket" class="internal xref"><code>wimse-ticket</code></a></p>
+                    <p id="section-toc.1-1.11.2.1.2.4.1"><a href="#section-11.1.4" class="auto internal xref">11.1.4</a>.  <a href="#name-wimse-ticket-client" class="internal xref"><code>wimse-ticket-client</code></a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1.2.5">
+                    <p id="section-toc.1-1.11.2.1.2.5.1"><a href="#section-11.1.5" class="auto internal xref">11.1.5</a>.  <a href="#name-wimse-ticket-server" class="internal xref"><code>wimse-ticket-server</code></a></p>
 </li>
                 </ul>
 </li>
@@ -1257,7 +1260,7 @@ The peers run one WIT-authenticated request/response exchange that also
 performs an ephemeral key agreement.
 Later messages in the same session are authenticated with HTTP Message Signatures
 (<span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>) using <code>hmac-sha256</code> and a transcript-derived session identifier,
-optionally with a compact ticket.
+optionally with compact tickets.
 The WIT is omitted from those messages.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">Goals:<a href="#section-1-3" class="pilcrow">¶</a></p>
 <ul class="normal">
@@ -1295,10 +1298,10 @@ both signed under the base profile.
 The peers run an ephemeral KEM: the client sends a fresh KEM public value,
 and the server returns a KEM ciphertext, both as opaque <code>wimse-kem</code> byte sequences.
 Both sides derive two MAC keys (one per direction) and a session identifier using HKDF <span>[<a href="#RFC5869" class="cite xref">RFC5869</a>]</span>.
-The server <span class="bcp14">MAY</span> return an opaque ticket.
+Each side <span class="bcp14">MAY</span> issue an opaque ticket for its own replicas (<a href="#ticket" class="auto internal xref">Section 8</a>).
 The client confirms possession of the derived keys by MACing its next request.
 Further requests and responses use <code>hmac-sha256</code> and carry the session identifier;
-when a ticket was issued, they carry that ticket as well.
+when tickets were issued, they carry those ticket parameters as well.
 There is no session rehandshake: when the session ends, the peers start a new handshake.
 A pair of workloads <span class="bcp14">MAY</span> hold concurrent sessions; the session identifier distinguishes them.<a href="#section-3-1" class="pilcrow">¶</a></p>
 </section>
@@ -1349,21 +1352,18 @@ Peers <span class="bcp14">MUST</span> validate KEM public-key inputs as required
             <p id="section-4.1-6.2.1"><code>wimse-kem</code> — Byte Sequence; <code>SerializePublicKey(pkR)</code>.<a href="#section-4.1-6.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
-<p id="section-4.1-7">The handshake response <span class="bcp14">MUST</span> include:<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+<p id="section-4.1-7">The handshake request <span class="bcp14">MAY</span> also include <code>wimse-ticket-client</code> (<a href="#ticket" class="auto internal xref">Section 8</a>).<a href="#section-4.1-7" class="pilcrow">¶</a></p>
+<p id="section-4.1-8">The handshake response <span class="bcp14">MUST</span> include:<a href="#section-4.1-8" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4.1-8.1">
-            <p id="section-4.1-8.1.1"><code>wimse-kem-suite</code> — String; <span class="bcp14">MUST</span> equal the request's suite.<a href="#section-4.1-8.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-4.1-9.1">
+            <p id="section-4.1-9.1.1"><code>wimse-kem-suite</code> — String; <span class="bcp14">MUST</span> equal the request's suite.<a href="#section-4.1-9.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-4.1-8.2">
-            <p id="section-4.1-8.2.1"><code>wimse-kem</code> — Byte Sequence; <code>enc</code> from <code>Encap(pkR)</code>.<a href="#section-4.1-8.2.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-4.1-9.2">
+            <p id="section-4.1-9.2.1"><code>wimse-kem</code> — Byte Sequence; <code>enc</code> from <code>Encap(pkR)</code>.<a href="#section-4.1-9.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
-<p id="section-4.1-9">The handshake response <span class="bcp14">MAY</span> also include:<a href="#section-4.1-9" class="pilcrow">¶</a></p>
-<ul class="normal">
-<li class="normal" id="section-4.1-10.1">
-            <p id="section-4.1-10.1.1"><code>wimse-ticket</code> — Byte Sequence; opaque ticket (<a href="#ticket" class="auto internal xref">Section 8</a>).<a href="#section-4.1-10.1.1" class="pilcrow">¶</a></p>
-</li>
-        </ul>
+<p id="section-4.1-10">The handshake response <span class="bcp14">MAY</span> also include <code>wimse-ticket-server</code> (<a href="#ticket" class="auto internal xref">Section 8</a>).
+If the request included <code>wimse-ticket-client</code>, the response <span class="bcp14">MUST</span> echo that same value.<a href="#section-4.1-10" class="pilcrow">¶</a></p>
 <p id="section-4.1-11">Those parameters are covered by <code>@signature-params</code> as usual for <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>.
 The private key associated with the WIT is used only to sign.
 It <span class="bcp14">MUST NOT</span> be used as a KEM key.<a href="#section-4.1-11" class="pilcrow">¶</a></p>
@@ -1428,8 +1428,8 @@ Both peers compute it from the handshake transcript; it is not sent on the hands
           <p id="section-6-4.3.1"><span class="bcp14">MUST</span> include <code>wimse-session-id</code> set to the value computed in <a href="#key-derivation" class="auto internal xref">Section 5</a>.<a href="#section-6-4.3.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-6-4.4">
-          <p id="section-6-4.4.1">If the handshake response included <code>wimse-ticket</code>, <span class="bcp14">MUST</span> include that same <code>wimse-ticket</code>
-value as a signature parameter; otherwise <span class="bcp14">MUST NOT</span> include <code>wimse-ticket</code>.<a href="#section-6-4.4.1" class="pilcrow">¶</a></p>
+          <p id="section-6-4.4.1">If the handshake established <code>wimse-ticket-client</code>, <span class="bcp14">MUST</span> include that same value;
+otherwise <span class="bcp14">MUST NOT</span> include <code>wimse-ticket-client</code>. Similarly for <code>wimse-ticket-server</code>.<a href="#section-6-4.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-6-4.5">
           <p id="section-6-4.5.1"><span class="bcp14">MUST</span> include the same signature parameters as the base profile for requests or responses,
@@ -1445,8 +1445,8 @@ except that <code>Workload-Identity-Token</code> is not covered because it is ab
       </ul>
 <p id="section-6-5">The sender MACs requests with <code>k_req</code> and responses with <code>k_res</code>.
 The recipient selects the session with <code>wimse-session-id</code>.
-When a ticket is present, the recipient <span class="bcp14">MAY</span> obtain MAC keys from <code>wimse-ticket</code> (<a href="#ticket" class="auto internal xref">Section 8</a>)
-instead of from session state.
+A client replica <span class="bcp14">MAY</span> open <code>wimse-ticket-client</code> to obtain MAC keys; a server replica <span class="bcp14">MAY</span> open
+<code>wimse-ticket-server</code> (<a href="#ticket" class="auto internal xref">Section 8</a>).
 Otherwise the recipient looks up MAC keys from local session state keyed by
 <code>wimse-session-id</code>.
 The recipient verifies accordingly.<a href="#section-6-5" class="pilcrow">¶</a></p>
@@ -1470,7 +1470,7 @@ applies when validating WIT <code>exp</code> claims (<span>[<a href="#I-D.ietf-w
 <code>session_exp</code> only caps how long handshake authority may be reused as MAC keys.<a href="#section-7-2" class="pilcrow">¶</a></p>
 <p id="section-7-3">This document does not define rehandshake inside a session.
 Peers that need a fresh session run a new handshake.
-Each session has its own <code>session_id</code>, key material, and, when issued, its own ticket.<a href="#section-7-3" class="pilcrow">¶</a></p>
+Each session has its own <code>session_id</code>, key material, and, when issued, its own tickets.<a href="#section-7-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="ticket">
@@ -1478,49 +1478,58 @@ Each session has its own <code>session_id</code>, key material, and, when issued
       <h2 id="name-tickets">
 <a href="#section-8" class="section-number selfRef">8. </a><a href="#name-tickets" class="section-name selfRef">Tickets</a>
       </h2>
-<p id="section-8-1"><code>wimse-ticket</code> is optional per session.
-It does not identify the session; <code>wimse-session-id</code> does (<a href="#session" class="auto internal xref">Section 6</a>, <a href="#key-derivation" class="auto internal xref">Section 5</a>).
+<p id="section-8-1">Tickets are optional per session and issuer-specific.
+<code>wimse-session-id</code> identifies the session (<a href="#session" class="auto internal xref">Section 6</a>, <a href="#key-derivation" class="auto internal xref">Section 5</a>).
 A peer that keeps session keys in local (or shared) state keyed by <code>session_id</code>
-        <span class="bcp14">MAY</span> omit the ticket.
-A ticket is useful when a replica on either side must recover session keys without that
+        <span class="bcp14">MAY</span> omit its ticket.
+A ticket is useful when a replica of that issuer must recover session keys without that
 shared state.<a href="#section-8-1" class="pilcrow">¶</a></p>
-<p id="section-8-2">When present, there is a single ticket for the session.
-The ticket is shared: it is meant so that a replica of either peer can open it and
-obtain <code>k_req</code> and <code>k_res</code> when that replica does not already hold the session keys.
-A peer that already has the keys from <a href="#key-derivation" class="auto internal xref">Section 5</a> (or from local session state)
-need not open the ticket; it only echoes it.
-<code>wimse-ticket</code> is an opaque Byte Sequence to this protocol.
-The peer that receives it on the handshake response <span class="bcp14">MUST</span> echo it unchanged on later
-session messages.
-This document does not specify ticket format, encryption, or how the two deployments
-provision and protect the shared ticket-opening keys.<a href="#section-8-2" class="pilcrow">¶</a></p>
-<p id="section-8-3">A ticket implementation needs enough data for a replica of either peer to obtain
-<code>k_req</code> and <code>k_res</code> and to enforce <a href="#lifetime" class="auto internal xref">Section 7</a>.
-The following content is <span class="bcp14">RECOMMENDED</span> inside the protected ticket material:<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-2">This document defines two signature parameters, each an opaque Byte Sequence:<a href="#section-8-2" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-8-4.1">
-          <p id="section-8-4.1.1"><code>session_id</code>,<a href="#section-8-4.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-8-3.1">
+          <p id="section-8-3.1.1"><code>wimse-ticket-client</code> — issued by the client; only the client deployment opens it.<a href="#section-8-3.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="section-8-4.2">
-          <p id="section-8-4.2.1"><code>k_req</code> and <code>k_res</code> (or equivalent key material),<a href="#section-8-4.2.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-8-4.3">
-          <p id="section-8-4.3.1">client and server <code>sub</code> values,<a href="#section-8-4.3.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-8-4.4">
-          <p id="section-8-4.4.1"><code>wimse-aud</code>,<a href="#section-8-4.4.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-8-4.5">
-          <p id="section-8-4.5.1"><code>session_exp</code>,<a href="#section-8-4.5.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-8-4.6">
-          <p id="section-8-4.6.1">KEM suite identifier.<a href="#section-8-4.6.1" class="pilcrow">¶</a></p>
+        <li class="normal" id="section-8-3.2">
+          <p id="section-8-3.2.1"><code>wimse-ticket-server</code> — issued by the server; only the server deployment opens it.<a href="#section-8-3.2.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
-<p id="section-8-5">A recipient that uses the ticket to obtain keys <span class="bcp14">MUST</span> reject it if the ticket cannot be
+<p id="section-8-4">The client <span class="bcp14">MAY</span> include <code>wimse-ticket-client</code> on the handshake request.
+The server <span class="bcp14">MAY</span> include <code>wimse-ticket-server</code> on the handshake response.
+If the request carried <code>wimse-ticket-client</code>, the response <span class="bcp14">MUST</span> echo it unchanged.
+Once established, both parameters (when present) are echoed unchanged on later session
+messages (<a href="#session" class="auto internal xref">Section 6</a>).
+A peer that already has the keys from <a href="#key-derivation" class="auto internal xref">Section 5</a> (or from local session state)
+need not open a ticket; it only echoes parameters it must carry.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">This document does not specify ticket format, encryption, or how each deployment
+protects its ticket-opening keys.
+Those keys are not shared across the two deployments.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">A ticket implementation needs enough data for a replica of the issuing peer to obtain
+<code>k_req</code> and <code>k_res</code> and to enforce <a href="#lifetime" class="auto internal xref">Section 7</a>.
+The following content is <span class="bcp14">RECOMMENDED</span> inside the protected ticket material:<a href="#section-8-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8-7.1">
+          <p id="section-8-7.1.1"><code>session_id</code>,<a href="#section-8-7.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-7.2">
+          <p id="section-8-7.2.1"><code>k_req</code> and <code>k_res</code> (or equivalent key material),<a href="#section-8-7.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-7.3">
+          <p id="section-8-7.3.1">client and server <code>sub</code> values,<a href="#section-8-7.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-7.4">
+          <p id="section-8-7.4.1"><code>wimse-aud</code>,<a href="#section-8-7.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-7.5">
+          <p id="section-8-7.5.1"><code>session_exp</code>,<a href="#section-8-7.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-7.6">
+          <p id="section-8-7.6.1">KEM suite identifier.<a href="#section-8-7.6.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-8-8">A recipient that uses a ticket to obtain keys <span class="bcp14">MUST</span> reject it if the ticket cannot be
 decoded or authenticated under current local policy.
-If a session message carries both <code>wimse-session-id</code> and <code>wimse-ticket</code>, and the opened
-ticket decodes to a different <code>session_id</code>, the recipient <span class="bcp14">MUST</span> reject the message.<a href="#section-8-5" class="pilcrow">¶</a></p>
+If a session message carries <code>wimse-session-id</code> and an opened ticket decodes to a
+different <code>session_id</code>, the recipient <span class="bcp14">MUST</span> reject the message.<a href="#section-8-8" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="negotiate">
@@ -1555,10 +1564,12 @@ that does not by itself make workload authentication post-quantum.<a href="#sect
 <p id="section-10-3">The first session request is the client's key-confirmation message.
 A server that accepts session traffic before that confirmation accepts a peer that
 may not have derived <code>k_req</code>.<a href="#section-10-3" class="pilcrow">¶</a></p>
-<p id="section-10-4">When tickets are used, whoever can mint valid tickets for a deployment can forge session MACs
-for that deployment.
+<p id="section-10-4">When tickets are used, whoever can mint valid tickets for one deployment can forge session
+MACs that that deployment's replicas will accept after opening the ticket.
+That risk is confined to the issuing deployment: client ticket keys do not open server
+tickets, and server ticket keys do not open client tickets.
 Ticket-protection key compromise is therefore equivalent to forging session signatures
-until outstanding tickets expire.
+for that deployment until outstanding tickets expire.
 Rotate those keys at least as often as the maximum WIT lifetime the deployment accepts.<a href="#section-10-4" class="pilcrow">¶</a></p>
 <p id="section-10-5">Session messages omit the WIT.
 Revocation or status checks that require the WIT apply at handshake time only.
@@ -1570,7 +1581,7 @@ Possession of <code>session_id</code> alone does not allow forging session MACs.
 <p id="section-10-7">Replay of session messages is unchanged from the base profile:
 <code>nonce</code> and optional replay caches help, and caches that are not shared across replicas
 leave cross-replica replay possible.<a href="#section-10-7" class="pilcrow">¶</a></p>
-<p id="section-10-8">TLS-terminating intermediaries see <code>wimse-session-id</code>, tickets (when present),
+<p id="section-10-8">TLS-terminating intermediaries see <code>wimse-session-id</code>, ticket parameters (when present),
 and MAC values in cleartext.
 They cannot alter covered components without failing verification.
 They can attempt capture-and-replay within <code>expires</code>.<a href="#section-10-8" class="pilcrow">¶</a></p>
@@ -1644,21 +1655,40 @@ signature session messages.<a href="#section-11.1.3-1.2.1" class="pilcrow">¶</a
           </ul>
 </section>
 </div>
-<div id="wimse-ticket">
+<div id="wimse-ticket-client">
 <section id="section-11.1.4">
-          <h4 id="name-wimse-ticket">
-<a href="#section-11.1.4" class="section-number selfRef">11.1.4. </a><a href="#name-wimse-ticket" class="section-name selfRef"><code>wimse-ticket</code></a>
+          <h4 id="name-wimse-ticket-client">
+<a href="#section-11.1.4" class="section-number selfRef">11.1.4. </a><a href="#name-wimse-ticket-client" class="section-name selfRef"><code>wimse-ticket-client</code></a>
           </h4>
 <ul class="normal">
 <li class="normal" id="section-11.1.4-1.1">
-              <p id="section-11.1.4-1.1.1">Name: <code>wimse-ticket</code><a href="#section-11.1.4-1.1.1" class="pilcrow">¶</a></p>
+              <p id="section-11.1.4-1.1.1">Name: <code>wimse-ticket-client</code><a href="#section-11.1.4-1.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-11.1.4-1.2">
-              <p id="section-11.1.4-1.2.1">Description: Byte Sequence; optional opaque session ticket for WIMSE fast HTTP signature
-handshake responses and session messages.<a href="#section-11.1.4-1.2.1" class="pilcrow">¶</a></p>
+              <p id="section-11.1.4-1.2.1">Description: Byte Sequence; optional opaque client-issued session ticket for WIMSE fast
+HTTP signature handshake and session messages.<a href="#section-11.1.4-1.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-11.1.4-1.3">
               <p id="section-11.1.4-1.3.1">Reference: RFC XXX, <a href="#ticket" class="auto internal xref">Section 8</a>.<a href="#section-11.1.4-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</section>
+</div>
+<div id="wimse-ticket-server">
+<section id="section-11.1.5">
+          <h4 id="name-wimse-ticket-server">
+<a href="#section-11.1.5" class="section-number selfRef">11.1.5. </a><a href="#name-wimse-ticket-server" class="section-name selfRef"><code>wimse-ticket-server</code></a>
+          </h4>
+<ul class="normal">
+<li class="normal" id="section-11.1.5-1.1">
+              <p id="section-11.1.5-1.1.1">Name: <code>wimse-ticket-server</code><a href="#section-11.1.5-1.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-11.1.5-1.2">
+              <p id="section-11.1.5-1.2.1">Description: Byte Sequence; optional opaque server-issued session ticket for WIMSE fast
+HTTP signature handshake and session messages.<a href="#section-11.1.5-1.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-11.1.5-1.3">
+              <p id="section-11.1.5-1.3.1">Reference: RFC XXX, <a href="#ticket" class="auto internal xref">Section 8</a>.<a href="#section-11.1.5-1.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
