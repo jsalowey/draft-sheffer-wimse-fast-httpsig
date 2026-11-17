@@ -112,7 +112,9 @@ Other suites are not defined by this document; the parameters below are designed
 document can add them without changing message layout.
 
 The handshake uses one DHKEM operation with a fresh key pair on each side
-({{Section 4.1 of RFC9180}}):
+({{Section 4.1 of RFC9180}}).
+In HPKE/DHKEM terms the client is the recipient and the server encapsulates to the
+client's public key:
 
 * The client generates an ephemeral P-256 recipient key pair `(skR, pkR)`.
 * The server runs `Encap(pkR)`, which generates an ephemeral key pair `(skE, pkE)`
@@ -153,7 +155,7 @@ Both sides compute:
 PRK = HKDF-Extract(salt=32 zero octets, IKM=shared_secret)
 info = "wimse-httpsig-session" || 0x00 ||
        suite || 0x00 ||
-       req_nonce || 0x00 || resp_nonce ||
+       req_nonce || 0x00 || resp_nonce || 0x00 ||
        SHA-256(client_WIT) ||
        SHA-256(server_WIT)
 OKM = HKDF-Expand(PRK, info, 80)
@@ -166,9 +168,8 @@ where:
 
 * `shared_secret` is the DHKEM output of `Encap` / `Decap` from {{handshake}}.
 * `suite` is the ASCII suite identifier.
-* `req_nonce` / `resp_nonce` are the handshake `nonce` signature parameters
-  ({{Section 2.3 of RFC9421}}), each encoded as the ASCII octets of the
-  Structured Fields String value ({{Section 3.3.3 of !RFC8941}}).
+* `req_nonce` / `resp_nonce` are the parsed handshake `nonce` values
+  ({{Section 2.3 of RFC9421}}) as ASCII octets and without the surrounding quotes.
 * `client_WIT` / `server_WIT` are the handshake request and response
   `Workload-Identity-Token` header field values (compact JWS serialization),
   as ASCII octets.
@@ -316,8 +317,7 @@ future KEM can harden the session secret without changing the message pattern;
 that does not by itself make workload authentication post-quantum.
 
 The first session request is the client's key-confirmation message.
-A server that accepts session traffic before that confirmation accepts a peer that
-may not have derived `k_req`.
+A peer that sees only the handshake response may not hold `k_req`.
 
 Separate ticket issuers confine minting: an opening key for one deployment does not
 open the other deployment's tickets.
