@@ -83,18 +83,19 @@ Table of Contents
    7.  Session Lifetime
    8.  Tickets
    9.  Negotiating the Extension
-   10. Security Considerations
-   11. IANA Considerations
-     11.1.  HTTP Signature Metadata Parameters
-       11.1.1.  wimse-kem-suite
-       11.1.2.  wimse-kem
-       11.1.3.  wimse-session-id
-       11.1.4.  wimse-ticket-client
-       11.1.5.  wimse-ticket-server
-   12. Open Issues
-   13. References
-     13.1.  Normative References
-     13.2.  Informative References
+   10. Examples
+   11. Security Considerations
+   12. IANA Considerations
+     12.1.  HTTP Signature Metadata Parameters
+       12.1.1.  wimse-kem-suite
+       12.1.2.  wimse-kem
+       12.1.3.  wimse-session-id
+       12.1.4.  wimse-ticket-client
+       12.1.5.  wimse-ticket-server
+   13. Open Issues
+   14. References
+     14.1.  Normative References
+     14.2.  Informative References
    Appendix A.  Document History
      A.1.  draft-sheffer-wimse-fast-httpsig-00
    Acknowledgments
@@ -193,18 +194,18 @@ Table of Contents
 
    The handshake request MUST include the signature parameters:
 
-   *  wimse-kem-suite — String; MUST be dhkem-p256-hkdf-sha256.
+   *  wimse-kem-suite: String; MUST be dhkem-p256-hkdf-sha256.
 
-   *  wimse-kem — Byte Sequence; SerializePublicKey(pkR).
+   *  wimse-kem: Byte Sequence; SerializePublicKey(pkR).
 
    The handshake request MUST NOT include wimse-ticket-client or wimse-
    ticket-server.
 
    The handshake response MUST include:
 
-   *  wimse-kem-suite — String; MUST equal the request's suite.
+   *  wimse-kem-suite: String; MUST equal the request's suite.
 
-   *  wimse-kem — Byte Sequence; enc from Encap(pkR).
+   *  wimse-kem: Byte Sequence; enc from Encap(pkR).
 
    The handshake response MAY also include wimse-ticket-server
    (Section 8).  The handshake response MUST NOT include wimse-ticket-
@@ -264,8 +265,8 @@ Table of Contents
 
    *  MUST use the HTTP Message Signatures algorithm hmac-sha256.
 
-   *  MUST include wimse-session-id set to the value computed in
-      Section 5.
+   *  MUST include wimse-session-id: Byte Sequence; the session_id value
+      computed in Section 5.
 
    *  Ticket parameters follow Section 8: wimse-ticket-server when
       established on the handshake response; wimse-ticket-client when
@@ -322,10 +323,10 @@ Table of Contents
    This document defines two signature parameters, each an opaque Byte
    Sequence:
 
-   *  wimse-ticket-client — issued by the client; only the client
+   *  wimse-ticket-client: issued by the client; only the client
       deployment opens it.
 
-   *  wimse-ticket-server — issued by the server; only the server
+   *  wimse-ticket-server: issued by the server; only the server
       deployment opens it.
 
    Issuance happens only after the issuer can populate the ticket with
@@ -403,7 +404,85 @@ Table of Contents
    Section 4.  Otherwise the client MUST NOT use session signatures from
    this exchange and continues with the base profile.
 
-10.  Security Considerations
+10.  Examples
+
+   The following messages illustrate one handshake and the first session
+   exchange between the same peers.  The nonce values are illustrative
+   and do not meet the entropy requirement of the base profile.  Some
+   values are truncated for readability.
+
+   =============== NOTE: '\' line wrapping per RFC 8792 ================
+
+   GET /gimme-ice-cream?flavor=vanilla HTTP/1.1
+   Host: svcb.example.com
+   Signature: sig1=:p7oS3Td9gTinkj4XCJDCz7M7aMOD4+aRLMeUeDoiY2ZkSb+VHA/\
+   wawG/zlTr5YiHRq/ekyxeERP8eUH+5HydBA==:
+   Signature-Input: sig1=("@method" "@path" "@query" "workload-identity\
+   -token");created=1794941027;expires=1794941327;nonce="fast1111";tag=\
+   "wimse-workload-to-workload";wimse-aud="https://svcb.example.com/gim\
+   me-ice-cream";wimse-sign-response;wimse-kem-suite="dhkem-p256-hkdf-s\
+   ha256";wimse-kem=:BLLf3h1WNjsWaRioviU0O99RizytP1LkIDREgPMHR7YSgZVlHL\
+   jv/QEPNHyEZHbnUKumy75h1rpl/KK4lWrewrk=:
+   Workload-Identity-Token: eyJhbGciOiJFZDI1NTE5...2tNmrxF3IXCQ
+
+                        Figure 1: Handshake Request
+
+   =============== NOTE: '\' line wrapping per RFC 8792 ================
+
+   HTTP/1.1 404 Not Found
+   Content-Length: 20
+   Content-Digest: sha-256=:uJC3qmCc7n6/6w4N2I0vAfj1cd/hTOAhxLEYXmPbNno\
+   =:
+   Content-Type: text/plain
+   Signature: sig1=:55FpeyDgpPR9ph2b2jRxyszuQMArVOqScllpf6HkTxREmA4LUeg\
+   GxDbPm1NqMGuEzrrxsZ7q5IZqyoCw6JIlCQ==:
+   Signature-Input: sig1=("@status" "workload-identity-token" "content-\
+   type" "content-digest" "@method";req "@path";req "@query";req);creat\
+   ed=1794941027;expires=1794941329;nonce="fast2222";tag="wimse-workloa\
+   d-to-workload";wimse-req-nonce="fast1111";wimse-kem-suite="dhkem-p25\
+   6-hkdf-sha256";wimse-kem=:BDrUPCnWqLE+8/98HiKD77vwZ9ZcAi6VgMcLwwoMkA\
+   1ClhYvE4EAfK5sBeUe5t57gzhhow049rnqeG6z4NGaKU8=:;wimse-ticket-server=\
+   :dGlja2V0...GxwdHg==:
+   Workload-Identity-Token: eyJhbGciOiJFZDI1NTE5...i9i7E0U1OPBg
+
+   No ice cream today.
+
+                        Figure 2: Handshake Response
+
+   =============== NOTE: '\' line wrapping per RFC 8792 ================
+
+   GET /gimme-ice-cream?flavor=vanilla HTTP/1.1
+   Host: svcb.example.com
+   Signature: sig1=:6UrEyIkdSu3mGefzuiP7ew1mhNWMSsWiKh/7BTXz5AM=:
+   Signature-Input: sig1=("@method" "@path" "@query");created=179494102\
+   7;expires=1794941327;nonce="fast3333";alg="hmac-sha256";tag="wimse-h\
+   ttpsig-session";wimse-aud="https://svcb.example.com/gimme-ice-cream"\
+   ;wimse-sign-response;wimse-session-id=:eGohVfXyyecoTaWunpim4Q==:;wim\
+   se-ticket-server=:dGlja2V0...GxwdHg==:;wimse-ticket-client=:dGlja2V0\
+   ...SktMTU4=:
+
+                         Figure 3: Session Request
+
+   =============== NOTE: '\' line wrapping per RFC 8792 ================
+
+   HTTP/1.1 404 Not Found
+   Content-Length: 20
+   Content-Digest: sha-256=:uJC3qmCc7n6/6w4N2I0vAfj1cd/hTOAhxLEYXmPbNno\
+   =:
+   Content-Type: text/plain
+   Signature: sig1=:b8mYcKatqaRfb225bJBKDBw8/vzEiEVO9wuYov+hJzk=:
+   Signature-Input: sig1=("@status" "content-type" "content-digest" "@m\
+   ethod";req "@path";req "@query";req);created=1794941027;expires=1794\
+   941327;nonce="fast4444";alg="hmac-sha256";tag="wimse-httpsig-session\
+   ";wimse-req-nonce="fast3333";wimse-session-id=:eGohVfXyyecoTaWunpim4\
+   Q==:;wimse-ticket-server=:dGlja2V0...GxwdHg==:;wimse-ticket-client=:\
+   dGlja2V0...SktMTU4=:
+
+   No ice cream today.
+
+                         Figure 4: Session Response
+
+11.  Security Considerations
 
    The base profile's considerations in [I-D.ietf-wimse-http-signature]
    apply to the handshake.
@@ -455,15 +534,15 @@ Table of Contents
    failing verification.  They can attempt capture-and-replay within
    expires.
 
-11.  IANA Considerations
+12.  IANA Considerations
 
-11.1.  HTTP Signature Metadata Parameters
+12.1.  HTTP Signature Metadata Parameters
 
    IANA is requested to register the following entries in the "HTTP
    Signature Metadata Parameters" registry
    [IANA.HTTP.MESSAGE.SIGNATURE], per Section 6.3.1 of [RFC9421]:
 
-11.1.1.  wimse-kem-suite
+12.1.1.  wimse-kem-suite
 
    *  Name: wimse-kem-suite
 
@@ -472,7 +551,7 @@ Table of Contents
 
    *  Reference: RFC XXX, Section 4.
 
-11.1.2.  wimse-kem
+12.1.2.  wimse-kem
 
    *  Name: wimse-kem
 
@@ -481,7 +560,7 @@ Table of Contents
 
    *  Reference: RFC XXX, Section 4.
 
-11.1.3.  wimse-session-id
+12.1.3.  wimse-session-id
 
    *  Name: wimse-session-id
 
@@ -490,7 +569,7 @@ Table of Contents
 
    *  Reference: RFC XXX, Section 5, Section 6.
 
-11.1.4.  wimse-ticket-client
+12.1.4.  wimse-ticket-client
 
    *  Name: wimse-ticket-client
 
@@ -500,7 +579,7 @@ Table of Contents
 
    *  Reference: RFC XXX, Section 8.
 
-11.1.5.  wimse-ticket-server
+12.1.5.  wimse-ticket-server
 
    *  Name: wimse-ticket-server
 
@@ -510,7 +589,7 @@ Table of Contents
 
    *  Reference: RFC XXX, Section 8.
 
-12.  Open Issues
+13.  Open Issues
 
    *  Error responses when the ticket is rejected and when session MAC
       verification fails.
@@ -519,9 +598,9 @@ Table of Contents
       ticket and MAC state before session_exp (Section 7), rather than
       waiting for that bound alone.
 
-13.  References
+14.  References
 
-13.1.  Normative References
+14.1.  Normative References
 
    [I-D.ietf-wimse-http-signature]
               Salowey, J. A. and Y. Sheffer, "WIMSE Workload-to-Workload
@@ -560,7 +639,7 @@ Table of Contents
               Message Signatures", RFC 9421, DOI 10.17487/RFC9421,
               February 2024, <https://www.rfc-editor.org/rfc/rfc9421>.
 
-13.2.  Informative References
+14.2.  Informative References
 
    [I-D.ietf-wimse-arch]
               Salowey, J. A., Rosomakho, Y., and H. Tschofenig,
