@@ -140,7 +140,7 @@ Table of Contents
 
 3.  Overview
 
-   A _session_ begins with one handshake request and its handshake
+   A session begins with one handshake request and its handshake
    response, both signed under the base profile.  The peers run an
    ephemeral KEM: the client sends a fresh KEM public value, and the
    server returns a KEM ciphertext, both as opaque wimse-kem byte
