@@ -1382,7 +1382,9 @@ It <span class="bcp14">MUST NOT</span> be used as a KEM key.<a href="#section-4.
 PRK = HKDF-Extract(salt=32 zero octets, IKM=shared_secret)
 info = "wimse-httpsig-session" || 0x00 ||
        suite || 0x00 ||
-       req_nonce || 0x00 || resp_nonce
+       req_nonce || 0x00 || resp_nonce ||
+       SHA-256(client_WIT) ||
+       SHA-256(server_WIT)
 OKM = HKDF-Expand(PRK, info, 80)
 k_req = OKM[0..31]
 k_res = OKM[32..63]
@@ -1401,6 +1403,14 @@ session_id = OKM[64..79]
           <p id="section-5-4.3.1"><code>req_nonce</code> / <code>resp_nonce</code> are the handshake <code>nonce</code> signature parameters
 (<span><a href="https://rfc-editor.org/rfc/rfc9421#section-2.3" class="relref">Section 2.3</a> of [<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>), each encoded as the ASCII octets of the
 Structured Fields String value (<span><a href="https://rfc-editor.org/rfc/rfc8941#section-3.3.3" class="relref">Section 3.3.3</a> of [<a href="#RFC8941" class="cite xref">RFC8941</a>]</span>).<a href="#section-5-4.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-4.4">
+          <p id="section-5-4.4.1"><code>client_WIT</code> / <code>server_WIT</code> are the handshake request and response
+<code>Workload-Identity-Token</code> header field values (compact JWS serialization),
+as ASCII octets.<a href="#section-5-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-5-4.5">
+          <p id="section-5-4.5.1"><code>SHA-256(...)</code> denotes the 32-octet SHA-256 hash of those octets.<a href="#section-5-4.5.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-5-5"><code>k_req</code> MACs session requests.
