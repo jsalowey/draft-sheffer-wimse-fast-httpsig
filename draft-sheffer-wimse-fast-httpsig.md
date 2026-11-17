@@ -83,7 +83,7 @@ Terminology follows {{?I-D.ietf-wimse-arch}} and {{I-D.ietf-wimse-http-signature
 
 # Overview {#overview}
 
-A *session* begins with one handshake request and its handshake response,
+A session begins with one handshake request and its handshake response,
 both signed under the base profile.
 The peers run an ephemeral KEM: the client sends a fresh KEM public value,
 and the server returns a KEM ciphertext, both as opaque `wimse-kem` byte sequences.
