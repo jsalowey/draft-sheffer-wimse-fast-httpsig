@@ -64,7 +64,7 @@ The peers run one WIT-authenticated request/response exchange that also
 performs an ephemeral key agreement.
 Later messages in the same session are authenticated with HTTP Message Signatures
 ({{!RFC9421}}) using `hmac-sha256` and a transcript-derived session identifier,
-optionally with a compact ticket.
+optionally with compact tickets.
 The WIT is omitted from those messages.
 
 Goals:
@@ -88,10 +88,10 @@ both signed under the base profile.
 The peers run an ephemeral KEM: the client sends a fresh KEM public value,
 and the server returns a KEM ciphertext, both as opaque `wimse-kem` byte sequences.
 Both sides derive two MAC keys (one per direction) and a session identifier using HKDF {{!RFC5869}}.
-The server MAY return an opaque ticket.
+Each side MAY issue an opaque ticket for its own replicas ({{ticket}}).
 The client confirms possession of the derived keys by MACing its next request.
 Further requests and responses use `hmac-sha256` and carry the session identifier;
-when a ticket was issued, they carry that ticket as well.
+when tickets were issued, they carry those ticket parameters as well.
 There is no session rehandshake: when the session ends, the peers start a new handshake.
 A pair of workloads MAY hold concurrent sessions; the session identifier distinguishes them.
 
@@ -129,14 +129,15 @@ The handshake request MUST include the signature parameters:
 * `wimse-kem-suite` — String; MUST be `dhkem-p256-hkdf-sha256`.
 * `wimse-kem` — Byte Sequence; `SerializePublicKey(pkR)`.
 
+The handshake request MAY also include `wimse-ticket-client` ({{ticket}}).
+
 The handshake response MUST include:
 
 * `wimse-kem-suite` — String; MUST equal the request's suite.
 * `wimse-kem` — Byte Sequence; `enc` from `Encap(pkR)`.
 
-The handshake response MAY also include:
-
-* `wimse-ticket` — Byte Sequence; opaque ticket ({{ticket}}).
+The handshake response MAY also include `wimse-ticket-server` ({{ticket}}).
+If the request included `wimse-ticket-client`, the response MUST echo that same value.
 
 Those parameters are covered by `@signature-params` as usual for {{RFC9421}}.
 The private key associated with the WIT is used only to sign.
@@ -183,8 +184,8 @@ A session signature on a request or response:
 * MUST use `tag` = `wimse-httpsig-session`.
 * MUST use the HTTP Message Signatures algorithm `hmac-sha256`.
 * MUST include `wimse-session-id` set to the value computed in {{key-derivation}}.
-* If the handshake response included `wimse-ticket`, MUST include that same `wimse-ticket`
-  value as a signature parameter; otherwise MUST NOT include `wimse-ticket`.
+* If the handshake established `wimse-ticket-client`, MUST include that same value;
+  otherwise MUST NOT include `wimse-ticket-client`. Similarly for `wimse-ticket-server`.
 * MUST include the same signature parameters as the base profile for requests or responses,
   as applicable; `expires` MUST NOT be after the bound in {{lifetime}}.
 * MUST cover the same components as the base profile for requests or responses, as applicable,
@@ -193,8 +194,8 @@ A session signature on a request or response:
 
 The sender MACs requests with `k_req` and responses with `k_res`.
 The recipient selects the session with `wimse-session-id`.
-When a ticket is present, the recipient MAY obtain MAC keys from `wimse-ticket` ({{ticket}})
-instead of from session state.
+A client replica MAY open `wimse-ticket-client` to obtain MAC keys; a server replica MAY open
+`wimse-ticket-server` ({{ticket}}).
 Otherwise the recipient looks up MAC keys from local session state keyed by
 `wimse-session-id`.
 The recipient verifies accordingly.
@@ -218,30 +219,36 @@ Per-message `expires` remains as in the base profile and is typically much short
 
 This document does not define rehandshake inside a session.
 Peers that need a fresh session run a new handshake.
-Each session has its own `session_id`, key material, and, when issued, its own ticket.
+Each session has its own `session_id`, key material, and, when issued, its own tickets.
 
 
 # Tickets {#ticket}
 
-`wimse-ticket` is optional per session.
-It does not identify the session; `wimse-session-id` does ({{session}}, {{key-derivation}}).
+Tickets are optional per session and issuer-specific.
+`wimse-session-id` identifies the session ({{session}}, {{key-derivation}}).
 A peer that keeps session keys in local (or shared) state keyed by `session_id`
-MAY omit the ticket.
-A ticket is useful when a replica on either side must recover session keys without that
+MAY omit its ticket.
+A ticket is useful when a replica of that issuer must recover session keys without that
 shared state.
 
-When present, there is a single ticket for the session.
-The ticket is shared: it is meant so that a replica of either peer can open it and
-obtain `k_req` and `k_res` when that replica does not already hold the session keys.
-A peer that already has the keys from {{key-derivation}} (or from local session state)
-need not open the ticket; it only echoes it.
-`wimse-ticket` is an opaque Byte Sequence to this protocol.
-The peer that receives it on the handshake response MUST echo it unchanged on later
-session messages.
-This document does not specify ticket format, encryption, or how the two deployments
-provision and protect the shared ticket-opening keys.
+This document defines two signature parameters, each an opaque Byte Sequence:
 
-A ticket implementation needs enough data for a replica of either peer to obtain
+* `wimse-ticket-client` — issued by the client; only the client deployment opens it.
+* `wimse-ticket-server` — issued by the server; only the server deployment opens it.
+
+The client MAY include `wimse-ticket-client` on the handshake request.
+The server MAY include `wimse-ticket-server` on the handshake response.
+If the request carried `wimse-ticket-client`, the response MUST echo it unchanged.
+Once established, both parameters (when present) are echoed unchanged on later session
+messages ({{session}}).
+A peer that already has the keys from {{key-derivation}} (or from local session state)
+need not open a ticket; it only echoes parameters it must carry.
+
+This document does not specify ticket format, encryption, or how each deployment
+protects its ticket-opening keys.
+Those keys are not shared across the two deployments.
+
+A ticket implementation needs enough data for a replica of the issuing peer to obtain
 `k_req` and `k_res` and to enforce {{lifetime}}.
 The following content is RECOMMENDED inside the protected ticket material:
 
@@ -252,10 +259,10 @@ The following content is RECOMMENDED inside the protected ticket material:
 * `session_exp`,
 * KEM suite identifier.
 
-A recipient that uses the ticket to obtain keys MUST reject it if the ticket cannot be
+A recipient that uses a ticket to obtain keys MUST reject it if the ticket cannot be
 decoded or authenticated under current local policy.
-If a session message carries both `wimse-session-id` and `wimse-ticket`, and the opened
-ticket decodes to a different `session_id`, the recipient MUST reject the message.
+If a session message carries `wimse-session-id` and an opened ticket decodes to a
+different `session_id`, the recipient MUST reject the message.
 
 
 # Negotiating the Extension {#negotiate}
@@ -288,10 +295,12 @@ The first session request is the client's key-confirmation message.
 A server that accepts session traffic before that confirmation accepts a peer that
 may not have derived `k_req`.
 
-When tickets are used, whoever can mint valid tickets for a deployment can forge session MACs
-for that deployment.
+When tickets are used, whoever can mint valid tickets for one deployment can forge session
+MACs that that deployment's replicas will accept after opening the ticket.
+That risk is confined to the issuing deployment: client ticket keys do not open server
+tickets, and server ticket keys do not open client tickets.
 Ticket-protection key compromise is therefore equivalent to forging session signatures
-until outstanding tickets expire.
+for that deployment until outstanding tickets expire.
 Rotate those keys at least as often as the maximum WIT lifetime the deployment accepts.
 
 Session messages omit the WIT.
@@ -307,7 +316,7 @@ Replay of session messages is unchanged from the base profile:
 `nonce` and optional replay caches help, and caches that are not shared across replicas
 leave cross-replica replay possible.
 
-TLS-terminating intermediaries see `wimse-session-id`, tickets (when present),
+TLS-terminating intermediaries see `wimse-session-id`, ticket parameters (when present),
 and MAC values in cleartext.
 They cannot alter covered components without failing verification.
 They can attempt capture-and-replay within `expires`.
@@ -340,11 +349,18 @@ per {{Section 6.3.1 of RFC9421}}:
   signature session messages.
 * Reference: RFC XXX, {{key-derivation}}, {{session}}.
 
-### `wimse-ticket`
+### `wimse-ticket-client`
 
-* Name: `wimse-ticket`
-* Description: Byte Sequence; optional opaque session ticket for WIMSE fast HTTP signature
-  handshake responses and session messages.
+* Name: `wimse-ticket-client`
+* Description: Byte Sequence; optional opaque client-issued session ticket for WIMSE fast
+  HTTP signature handshake and session messages.
+* Reference: RFC XXX, {{ticket}}.
+
+### `wimse-ticket-server`
+
+* Name: `wimse-ticket-server`
+* Description: Byte Sequence; optional opaque server-issued session ticket for WIMSE fast
+  HTTP signature handshake and session messages.
 * Reference: RFC XXX, {{ticket}}.
 
 
