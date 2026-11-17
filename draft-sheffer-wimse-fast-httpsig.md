@@ -152,7 +152,9 @@ Both sides compute:
 PRK = HKDF-Extract(salt=32 zero octets, IKM=shared_secret)
 info = "wimse-httpsig-session" || 0x00 ||
        suite || 0x00 ||
-       req_nonce || 0x00 || resp_nonce
+       req_nonce || 0x00 || resp_nonce ||
+       SHA-256(client_WIT) ||
+       SHA-256(server_WIT)
 OKM = HKDF-Expand(PRK, info, 80)
 k_req = OKM[0..31]
 k_res = OKM[32..63]
@@ -166,6 +168,10 @@ where:
 * `req_nonce` / `resp_nonce` are the handshake `nonce` signature parameters
   ({{Section 2.3 of RFC9421}}), each encoded as the ASCII octets of the
   Structured Fields String value ({{Section 3.3.3 of !RFC8941}}).
+* `client_WIT` / `server_WIT` are the handshake request and response
+  `Workload-Identity-Token` header field values (compact JWS serialization),
+  as ASCII octets.
+* `SHA-256(...)` denotes the 32-octet SHA-256 hash of those octets.
 
 `k_req` MACs session requests.
 `k_res` MACs session responses.
