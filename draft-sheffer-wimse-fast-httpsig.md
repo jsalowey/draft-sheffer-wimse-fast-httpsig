@@ -129,15 +129,15 @@ Peers MUST validate KEM public-key inputs as required for DHKEM(P-256, HKDF-SHA2
 
 The handshake request MUST include the signature parameters:
 
-* `wimse-kem-suite` — String; MUST be `dhkem-p256-hkdf-sha256`.
-* `wimse-kem` — Byte Sequence; `SerializePublicKey(pkR)`.
+* `wimse-kem-suite`: String; MUST be `dhkem-p256-hkdf-sha256`.
+* `wimse-kem`: Byte Sequence; `SerializePublicKey(pkR)`.
 
 The handshake request MUST NOT include `wimse-ticket-client` or `wimse-ticket-server`.
 
 The handshake response MUST include:
 
-* `wimse-kem-suite` — String; MUST equal the request's suite.
-* `wimse-kem` — Byte Sequence; `enc` from `Encap(pkR)`.
+* `wimse-kem-suite`: String; MUST equal the request's suite.
+* `wimse-kem`: Byte Sequence; `enc` from `Encap(pkR)`.
 
 The handshake response MAY also include `wimse-ticket-server` ({{ticket}}).
 The handshake response MUST NOT include `wimse-ticket-client`.
@@ -191,7 +191,8 @@ A session signature on a request or response:
 
 * MUST use `tag` = `wimse-httpsig-session`.
 * MUST use the HTTP Message Signatures algorithm `hmac-sha256`.
-* MUST include `wimse-session-id` set to the value computed in {{key-derivation}}.
+* MUST include `wimse-session-id`: Byte Sequence; the `session_id` value computed in
+  {{key-derivation}}.
 * Ticket parameters follow {{ticket}}: `wimse-ticket-server` when established on the
   handshake response; `wimse-ticket-client` when established on a prior or current
   session request.
@@ -242,8 +243,8 @@ shared state.
 
 This document defines two signature parameters, each an opaque Byte Sequence:
 
-* `wimse-ticket-client` — issued by the client; only the client deployment opens it.
-* `wimse-ticket-server` — issued by the server; only the server deployment opens it.
+* `wimse-ticket-client`: issued by the client; only the client deployment opens it.
+* `wimse-ticket-server`: issued by the server; only the server deployment opens it.
 
 Issuance happens only after the issuer can populate the ticket with derived session
 material ({{key-derivation}}, {{lifetime}}):
@@ -301,6 +302,35 @@ The client treats the extension as negotiated only if the handshake response inc
 `wimse-kem-suite` and `wimse-kem` as required in {{handshake}}.
 Otherwise the client MUST NOT use session signatures from this exchange and continues
 with the base profile.
+
+
+# Examples {#examples}
+
+The following messages illustrate one handshake and the first session exchange
+between the same peers.
+The `nonce` values are illustrative and do not meet the entropy requirement of the
+base profile. Some values are
+truncated for readability.
+
+~~~ http
+{::include includes/fast-hs-request.txt.out}
+~~~
+{: title="Handshake Request"}
+
+~~~ http
+{::include includes/fast-hs-response.txt.out}
+~~~
+{: title="Handshake Response"}
+
+~~~ http
+{::include includes/fast-sess-request.txt.out}
+~~~
+{: title="Session Request"}
+
+~~~ http
+{::include includes/fast-sess-response.txt.out}
+~~~
+{: title="Session Response"}
 
 
 # Security Considerations {#security}

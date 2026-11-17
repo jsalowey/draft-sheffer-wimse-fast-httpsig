@@ -13,3 +13,6 @@ else
 	    https://github.com/martinthomson/i-d-template $(LIBDIR)
 endif
 endif
+
+generate-includes:
+	find ./includes/fast-*.txt -maxdepth 1 -type f -exec includes/rfcfold.sh -i {} -o {}.out \;
