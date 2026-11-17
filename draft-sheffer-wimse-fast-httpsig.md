@@ -55,7 +55,7 @@ later requests and responses between the same workloads without the WIT.
 # Introduction
 
 {{!I-D.ietf-wimse-http-signature}} protects each HTTP message with a WIT
-({{!I-D.ietf-wimse-workload-creds}}) and a signature under the private key associated with the WIT.
+{{!I-D.ietf-wimse-workload-creds}} and a signature under the private key associated with the WIT.
 The WIT is large relative to typical service requests.
 Asymmetric verification is secondary to that byte and parsing cost.
 
@@ -63,7 +63,7 @@ This document defines an optional extension of that profile.
 The peers run one WIT-authenticated request/response exchange that also
 performs an ephemeral key agreement.
 Later messages in the same session are authenticated with HTTP Message Signatures
-({{!RFC9421}}) using `hmac-sha256` and a transcript-derived session identifier,
+{{!RFC9421}} using `hmac-sha256` and a transcript-derived session identifier,
 optionally with compact tickets.
 The WIT is omitted from those messages.
 
@@ -85,11 +85,13 @@ Terminology follows {{?I-D.ietf-wimse-arch}} and {{I-D.ietf-wimse-http-signature
 
 A session begins with one handshake request and its handshake response,
 both signed under the base profile.
-The peers run an ephemeral KEM: the client sends a fresh KEM public value,
-and the server returns a KEM ciphertext, both as opaque `wimse-kem` byte sequences.
+The peers run an ephemeral HPKE DHKEM {{!RFC9180}}: the client sends a fresh KEM
+public value, and the server returns a KEM ciphertext, both as opaque `wimse-kem`
+byte sequences.
 Both sides derive two MAC keys (one per direction) and a session identifier using HKDF {{!RFC5869}}.
 The server MAY issue an opaque ticket on the handshake response.
-The client MAY issue an opaque ticket on its first session request, after key derivation ({{ticket}}).
+The client MAY issue an opaque ticket on its first session request, after key derivation;
+see {{ticket}}.
 The client confirms possession of the derived keys by MACing its next request.
 Further requests and responses use `hmac-sha256` and carry the session identifier;
 when tickets were issued, they carry those ticket parameters as well.
@@ -139,7 +141,7 @@ The handshake response MUST include:
 * `wimse-kem-suite`: String; MUST equal the request's suite.
 * `wimse-kem`: Byte Sequence; `enc` from `Encap(pkR)`.
 
-The handshake response MAY also include `wimse-ticket-server` ({{ticket}}).
+The handshake response MAY also include `wimse-ticket-server`; see {{ticket}}.
 The handshake response MUST NOT include `wimse-ticket-client`.
 
 Those parameters are covered by `@signature-params` as usual for {{RFC9421}}.
@@ -177,7 +179,7 @@ where:
 
 `k_req` MACs session requests.
 `k_res` MACs session responses.
-`session_id` is the session identifier carried as `wimse-session-id` ({{session}}).
+`session_id` is the session identifier carried as `wimse-session-id` in {{session}}.
 Both peers compute it from the handshake transcript; it is not sent on the handshake.
 
 
@@ -205,7 +207,7 @@ A session signature on a request or response:
 The sender MACs requests with `k_req` and responses with `k_res`.
 The recipient selects the session with `wimse-session-id`.
 A client replica MAY open `wimse-ticket-client` to obtain MAC keys; a server replica MAY open
-`wimse-ticket-server` ({{ticket}}).
+`wimse-ticket-server` (see {{ticket}}).
 Otherwise the recipient looks up MAC keys from local session state keyed by
 `wimse-session-id`.
 The recipient verifies accordingly.
@@ -222,7 +224,7 @@ Senders MUST NOT set `expires` after `session_exp`.
 Recipients MUST reject a session signature if `expires` is after `session_exp`,
 or if the current time is after `session_exp`.
 Comparisons against `session_exp` use the same clock-skew policy the deployment
-applies when validating WIT `exp` claims ({{I-D.ietf-wimse-workload-creds}}).
+applies when validating WIT `exp` claims {{I-D.ietf-wimse-workload-creds}}.
 
 Per-message `expires` remains as in the base profile and is typically much shorter.
 `session_exp` only caps how long handshake authority may be reused as MAC keys.
@@ -235,7 +237,7 @@ Each session has its own `session_id`, key material, and, when issued, its own t
 # Tickets {#ticket}
 
 Tickets are optional per session and issuer-specific.
-`wimse-session-id` identifies the session ({{session}}, {{key-derivation}}).
+`wimse-session-id` identifies the session; see {{session}} and {{key-derivation}}.
 A peer that keeps session keys in local (or shared) state keyed by `session_id`
 MAY omit its ticket.
 A ticket is useful when a replica of that issuer must recover session keys without that
@@ -247,7 +249,7 @@ This document defines two signature parameters, each an opaque Byte Sequence:
 * `wimse-ticket-server`: issued by the server; only the server deployment opens it.
 
 Issuance happens only after the issuer can populate the ticket with derived session
-material ({{key-derivation}}, {{lifetime}}):
+material; see {{key-derivation}} and {{lifetime}}:
 
 * The server MAY include `wimse-ticket-server` on the handshake response.
 * The client MUST NOT include `wimse-ticket-client` on the handshake request.
@@ -338,7 +340,7 @@ truncated for readability.
 The base profile's considerations in {{I-D.ietf-wimse-http-signature}} apply to the handshake.
 
 An attacker that breaks P-256 ECDH for a recorded handshake can forge session MACs
-until `session_exp` ({{lifetime}}).
+until `session_exp`; see {{lifetime}}.
 Authentication of the handshake itself remains the WIT signature algorithms
 (`ES256`, `Ed25519`, and others allowed by {{I-D.ietf-wimse-workload-creds}}).
 Those algorithms are not post-quantum.
@@ -365,7 +367,7 @@ accepts, and minimize retention of old keys.
 Session messages omit the WIT.
 Revocation or status checks that require the WIT apply at handshake time only.
 After that, authority to speak in the session is carried by the MAC keys
-and `wimse-session-id` until `session_exp` ({{lifetime}}).
+and `wimse-session-id` until `session_exp`; see {{lifetime}}.
 
 `session_id` is derived from the same PRK as the MAC keys but is carried in cleartext.
 It identifies the session; it is not a secret authenticator.
@@ -429,7 +431,7 @@ per {{Section 6.3.1 of RFC9421}}:
 
 * Error responses when the ticket is rejected and when session MAC verification fails.
 * Whether a session needs an explicit cleanup hint so peers can drop ticket and MAC state
-  before `session_exp` ({{lifetime}}), rather than waiting for that bound alone.
+  before `session_exp` (see {{lifetime}}), rather than waiting for that bound alone.
 
 
 --- back
